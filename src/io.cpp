@@ -1,10 +1,11 @@
 #include <stdio.h>
+#include <unistd.h>
 #include <stddef.h>
 
 #include "io.hpp"
 #include "utils.hpp"
 
-char *io::file_to_cstr(const char *filepath) {
+char *file_to_cstr(const char *filepath) {
     FILE *file = fopen(filepath, "rb");
 
     if (!file) {
@@ -28,4 +29,10 @@ char *io::file_to_cstr(const char *filepath) {
 
     buffer[length] = '\0';
     return buffer;
+}
+
+char get_char(void) {
+    char ch;
+    read(STDIN_FILENO, &ch, 1);
+    return ch;
 }

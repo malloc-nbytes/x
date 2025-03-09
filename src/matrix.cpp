@@ -1,43 +1,104 @@
+#include <stdio.h>
 #include <string.h>
 
-#include <utility>
-
 #include "matrix.hpp"
-#include "templates/array.hpp"
 #include "utils.hpp"
 #include "dyn_array.h"
 
-Matrix::Matrix(const char *filepath, char *contents) {
-    m_filepath = strdup(filepath);
+const Matrix::Line &Matrix::operator[](size_t i) const {
+    return this->lines.data[i];
+}
+
+Matrix::Line &Matrix::operator[](size_t i) {
+    if (i >= this->lines.len) {
+        err_wargs("row %zu is out of bounds of length %zu",
+                  lines.len, i);
+    }
+    return this->lines.data[i];
+}
+
+char &Matrix::at(size_t i, size_t j) {
+    this->assert_inbounds(i, j);
+    return (*this)[i].data[j];
+}
+
+const char &Matrix::at(size_t i, size_t j) const {
+    this->assert_inbounds(i, j);
+    return (*this)[i].data[j];
+}
+
+void Matrix::assert_inbounds(size_t i, size_t j) const {
+    if (i >= this->lines.len) {
+        err_wargs("row %zu is out of bounds of length %zu",
+                  this->lines.len, i);
+    }
+    if (j >= this->lines.data[i].len) {
+        err_wargs("column %zu is out of bounds of length %zu",
+                  this->lines.data[i].len, j);
+    }
+}
+
+Matrix::Line line_create(char *s, size_t len, size_t cap) {
+    return (Matrix::Line) {
+        .data = strdup(s),
+        .len = len,
+        .cap = cap,
+    };
+}
+
+Matrix matrix_create(char *src, const char *filepath) {
+    const char *filepath_actual = filepath ? filepath : "[new file]";
+
+    Matrix m = (Matrix) {
+        .lines = {
+            .data = NULL,
+            .len = 0,
+            .cap = 0,
+        },
+        .filepath = strdup(filepath_actual),
+    };
+
+    if (!src || !filepath) return m;
 
     dyn_array(char, buf);
 
-    for (size_t i = 0; contents[i]; ++i) {
-        char c = contents[i];
+    for (size_t i = 0; src[i]; ++i) {
+        char c = src[i];
         if (c == '\n') {
-            Array<char> chars(buf.data, buf.len);
-            m_data.add(std::move(chars));
-            memset(buf.data, '\0', buf.len);
-            buf.len = 0;
+            Matrix::Line line = line_create(buf.data, buf.len, buf.cap);
+            dyn_array_append(m.lines, line);
+            memset(buf.data, 0, buf.len), buf.len = 0;
         } else {
             dyn_array_append(buf, c);
         }
     }
+
+    if (buf.len > 0) {
+        Matrix::Line line = line_create(buf.data, buf.len, buf.cap);
+        dyn_array_append(m.lines, line);
+    }
+
+    dyn_array_free(buf);
+
+    return m;
 }
 
-void Matrix::dbg_dump() const {
-    for (size_t i = 0; i < m_rows; ++i) {
-        for (size_t j = 0; j < m_data[i].length(); ++j) {
-            putchar(m_data[i][j]);
+void matrix_dbg_dump(Matrix *m) {
+    for (size_t i = 0; i < m->lines.len; ++i) {
+        const Matrix::Line &line = (*m)[i];
+        for (size_t j = 0; j < line.len; ++j) {
+            putchar(line.data[j]);
         }
         putchar('\n');
     }
 }
 
-Matrix::~Matrix(void) {
-    free(m_filepath);
-}
-
-void Matrix::assert_inbounds_row(size_t i) const {
-    assert(i >= 0 && i < m_rows);
+void matrix_free(Matrix *m) {
+    for (size_t i = 0; i < m->lines.len; ++i) {
+        free(m->lines.data[i].data);
+    }
+    if (m->lines.data) {
+        free(m->lines.data);
+    }
+    free(m->filepath);
 }

@@ -1,25 +1,29 @@
 #ifndef MATRIX_HPP
 #define MATRIX_HPP
 
-#include "templates/array.hpp"
+typedef struct {
+    typedef struct {
+        char *data;
+        size_t len, cap;
+    } Line;
 
-struct Matrix {
-    Array<Array<char>> m_data;
-    Array<int> m_cols;
-    size_t m_rows;
-    char *m_filepath;
+    struct {
+        Line *data;
+        size_t len, cap;
+    } lines;
 
-    // Expects alloc'd string for filepath,
-    // and alloc'd string for contents. Takes
-    // ownership of both.
-    Matrix(const char *filepath, char *contents);
+    char *filepath;
 
-    ~Matrix(void);
+    size_t      col_at(size_t i, size_t j) const;
+    char       &at(size_t i, size_t j);
+    const char &at(size_t i, size_t j) const;
+    Line       &operator[](size_t i);
+    const Line &operator[](size_t i) const;
+    void        assert_inbounds(size_t i, size_t j) const;
+} Matrix;
 
-    void dbg_dump(void) const;
-
-private:
-    void assert_inbounds_row(size_t i) const;
-};
+Matrix matrix_create(char *src, const char *filepath);
+void matrix_dbg_dump(Matrix *m);
+void matrix_free(Matrix *m);
 
 #endif // MATRIX_HPP

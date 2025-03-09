@@ -84,7 +84,7 @@
 #define dyn_array_append(da, value)                                     \
     do {                                                                \
         if ((da).len >= (da).cap) {                                     \
-            (da).cap *= 2;                                              \
+            (da).cap = (da).cap ? (da).cap * 2 : 2;                     \
             (da).data = (typeof(*((da).data)) *)                        \
                 realloc((da).data,                                      \
                         (da).cap * sizeof(*((da).data)));               \
